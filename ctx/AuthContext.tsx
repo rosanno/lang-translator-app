@@ -8,7 +8,7 @@ type AuthContextType = {
   loading: boolean;
   isAdmin: boolean;
   isPremium: boolean;
-  premiumExpriresAt: number | null;
+  premiumExpriresAt: string | null;
   refreshProfile: () => Promise<void>;
 };
 
