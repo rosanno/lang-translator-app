@@ -1,6 +1,7 @@
+import { AuthContext } from "@/ctx/AuthContext";
 import { supabase } from "@/utils/supabase";
 import { Session } from "@supabase/supabase-js";
-import { PropsWithChildren, useState } from "react";
+import { PropsWithChildren, useEffect, useState } from "react";
 
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
@@ -28,4 +29,44 @@ export default function AuthProvider({ children }: PropsWithChildren) {
   };
 
   const refreshProfile = () => loadProfile(session);
+
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true);
+      const { data } = await supabase.auth.getSession();
+      const initialSession = data.session ?? null;
+      setSession(initialSession);
+      await loadProfile(initialSession);
+      setLoading(false);
+    };
+
+    init();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, newSession) => [
+      setLoading(true),
+      setSession(newSession),
+      loadProfile(newSession).then(() => setLoading(false)),
+    ]);
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        session,
+        user: session?.user ?? null,
+        profile,
+        loading,
+        isAdmin: false,
+        isPremium,
+        premiumExpriresAt,
+        refreshProfile,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
